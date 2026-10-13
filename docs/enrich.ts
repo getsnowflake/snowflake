@@ -1,42 +1,54 @@
 import { sample } from 'openapi-sampler';
+import type { OpenAPIV3 } from 'openapi-types';
+import type { OpenApiDocument } from 'openapi-merge';
 
 const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']);
-const humanize = (name) => name.replace(/^models\./, '').replace(/([a-z])([A-Z])/g, '$1 $2');
+const humanize = (name: string) => name.replace(/^models\./, '').replace(/([a-z])([A-Z])/g, '$1 $2');
 
-export function* operations(spec) {
+export function* operations(spec: OpenAPIV3.Document) {
   for (const [path, item] of Object.entries(spec.paths ?? {})) {
+    if (!item) continue;
     for (const [method, operation] of Object.entries(item)) {
-      if (methods.has(method)) yield { path, method, operation };
+      if (methods.has(method) && operation) yield { path, method, operation: operation as OpenAPIV3.OperationObject };
     }
   }
 }
 
 // Materialize each service's security before merging. A service-wide requirement
 // must never leak onto another service's public login or health operations.
-export function prepareForMerge(spec) {
+export function prepareForMerge(spec: OpenAPIV3.Document): OpenApiDocument {
   for (const { operation } of operations(spec)) {
     operation.security ??= structuredClone(spec.security ?? []);
   }
   delete spec.security;
   const bearer = spec.components?.securitySchemes?.Bearer;
   if (bearer) {
-    spec.components.securitySchemes.Bearer = {
+    spec.components!.securitySchemes!.Bearer = {
       type: 'http', scheme: 'bearer', bearerFormat: 'JWT',
       description: 'JWT access token returned by the authentication service.',
     };
   }
-  return spec;
+  // The merge library uses its own OpenAPI types, with required path items.
+  return spec as OpenApiDocument;
 }
 
-function addExamples(content, spec, request) {
+function schemaExample(schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject, spec: OpenAPIV3.Document, request?: boolean) {
+  // The sampler accepts JSON Schema types; OpenAPI 3.0 adds nullable and uses
+  // boolean exclusive bounds, which its runtime also supports.
+  return sample(schema as Parameters<typeof sample>[0], {
+    skipReadOnly: request === true, skipWriteOnly: request === false,
+  }, spec);
+}
+
+function addExamples(content: Record<string, OpenAPIV3.MediaTypeObject> | undefined, spec: OpenAPIV3.Document, request: boolean) {
   for (const media of Object.values(content ?? {})) {
     if (!Object.hasOwn(media, 'example') && !Object.keys(media.examples ?? {}).length && media.schema) {
-      media.example = sample(media.schema, { skipReadOnly: request, skipWriteOnly: !request }, spec);
+      media.example = schemaExample(media.schema, spec, request);
     }
   }
 }
 
-function descriptionContext(path) {
+function descriptionContext(path: string[]) {
   if (path[0] === 'paths') {
     const location = `${path[2].toUpperCase()} ${path[1]}`;
     if (path[3] === 'responses') return `Response ${path[4]} for ${location}${path.length > 5 ? `, ${path.slice(5).join(' ')}` : ''}`;
@@ -46,14 +58,15 @@ function descriptionContext(path) {
   return path.filter((part) => !['components', 'schemas', 'properties'].includes(part)).join('.');
 }
 
-function distinguishDescriptions(spec) {
-  const descriptions = new Map();
-  function visit(value, path = []) {
+function distinguishDescriptions(spec: OpenAPIV3.Document) {
+  const descriptions = new Map<string, Array<{ value: Record<string, unknown>; path: string[] }>>();
+  function visit(value: unknown, path: string[] = []) {
     if (!value || typeof value !== 'object') return;
-    if (typeof value.description === 'string' && value.description.trim()) {
-      const matches = descriptions.get(value.description) ?? [];
-      matches.push({ value, path });
-      descriptions.set(value.description, matches);
+    const object = value as Record<string, unknown>;
+    if (typeof object.description === 'string' && object.description.trim()) {
+      const matches = descriptions.get(object.description) ?? [];
+      matches.push({ value: object, path });
+      descriptions.set(object.description, matches);
     }
     for (const [key, child] of Object.entries(value)) {
       // Payload examples/defaults are API data, not documentation metadata.
@@ -69,28 +82,32 @@ function distinguishDescriptions(spec) {
   }
 }
 
-export function enrich(spec) {
+export function enrich(spec: OpenAPIV3.Document) {
   const tags = new Map((spec.tags ?? []).map((tag) => [tag.name, tag]));
   for (const { path, method, operation } of operations(spec)) {
-    const words = `${method} ${path.replaceAll('{', ' by ').replaceAll('}', '')}`.match(/[a-zA-Z0-9]+/g);
+    const words = `${method} ${path.replaceAll('{', ' by ').replaceAll('}', '')}`.match(/[a-zA-Z0-9]+/g)!;
     operation.operationId ||= words.map((word, i) => i ? word[0].toUpperCase() + word.slice(1) : word).join('');
     if (!operation.description && !operation.summary) operation.summary = `${method.toUpperCase()} ${path}`;
     for (const name of operation.tags ?? []) {
       if (!tags.has(name)) tags.set(name, { name, description: `${humanize(name)} operations.` });
     }
-    if (operation.requestBody && !operation.requestBody.$ref) {
+    if (operation.requestBody && !('$ref' in operation.requestBody)) {
       operation.requestBody.description ||= `Request fields for ${operation.summary || operation.description}`.replace(/\.?$/, '.');
       addExamples(operation.requestBody.content, spec, true);
     }
-    for (const response of Object.values(operation.responses ?? {})) addExamples(response.content, spec, false);
+    for (const response of Object.values(operation.responses ?? {})) {
+      if (!('$ref' in response)) addExamples(response.content, spec, false);
+    }
   }
   spec.tags = [...tags.values()];
   for (const tag of spec.tags) tag.description ||= `${humanize(tag.name)} operations.`;
   for (const [kind, components] of Object.entries(spec.components ?? {})) {
     for (const [name, component] of Object.entries(components)) {
-      if (!component.$ref) component.description ||= `${humanize(name)}${component.enum ? ' values' : ' fields'}.`;
-      if (kind === 'schemas' && !Object.hasOwn(component, 'example')) {
-        component.example = sample(component, {}, spec);
+      const metadata = component as { $ref?: string; description?: string; enum?: unknown[]; example?: unknown };
+      if (metadata.$ref) continue;
+      metadata.description ||= `${humanize(name)}${metadata.enum ? ' values' : ' fields'}.`;
+      if (kind === 'schemas' && !Object.hasOwn(metadata, 'example')) {
+        (component as OpenAPIV3.SchemaObject).example = schemaExample(component as OpenAPIV3.SchemaObject, spec);
       }
     }
   }

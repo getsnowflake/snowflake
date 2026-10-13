@@ -7,7 +7,7 @@ make openapi
 make docs-check
 ```
 
-Requires Go, Swag, Maven, .NET 8 or newer, and Node.js 24 or newer. Override
+Requires Go, Swag, Maven, .NET 8 or newer, and Bun 1.4 or newer. Override
 Maven's executable with `make openapi MVN=/path/to/mvn` if needed.
 
 `make openapi` regenerates all four service contracts, converts Go's Swagger
@@ -34,5 +34,7 @@ snake_case wire format. Renaming only the documentation would produce an
 incorrect contract; changing the API fields requires a separate compatibility
 decision. Scalar's default online rules still show those naming advisories.
 
-The merged artifact is replaced only after validation passes. All documentation
-dependencies are pinned in `package-lock.json`.
+The merged artifact is replaced only after validation passes. TypeScript scripts
+run directly with Bun; `make docs-check` runs type checking and Bun tests.
+Dependencies are pinned in `bun.lock`. The postinstall script uses Bun to install
+Scalar's native Vacuum linter, since Bun skips dependency lifecycle scripts.

@@ -15,7 +15,7 @@ INPUT_FILE = ./swagger.json
 OUTPUT_FILE = ./openapi.json
 openapi-gen:
 	$(MAKE) -C .. docs-tools
-	node ../docs/generate.mjs convert $(INPUT_FILE) $(OUTPUT_FILE)
+	bun ../docs/generate.ts convert $(INPUT_FILE) $(OUTPUT_FILE)
 
 docs-fmt:
 	swag fmt -g src/cmd/server/main.go -d ./src

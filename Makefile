@@ -9,8 +9,8 @@ check-docker:
 check-dotnet:
 	@command -v dotnet > /dev/null 2>&1 || { echo ".NET is not installed. Please install .NET."; exit 1; }
 
-check-node:
-	@command -v node > /dev/null 2>&1 || { echo "Node is not installed. Please install Node."; exit 1; }
+check-bun:
+	@command -v bun > /dev/null 2>&1 || { echo "Bun is not installed. Please install Bun."; exit 1; }
 
 check-go:
 	@command -v go > /dev/null 2>&1 || { echo "Go is not installed. Please install Go."; exit 1; }
@@ -28,10 +28,11 @@ start: check-docker check-dotnet
 	make migrate-oxygen
 
 # --- OpenAPI generation targets (individual services) ---
-docs/node_modules/.package-lock.json: docs/package.json docs/package-lock.json
-	npm ci --prefix docs --no-audit --no-fund
+docs/node_modules/.docs-installed: docs/package.json docs/bun.lock
+	cd docs && bun install --frozen-lockfile
+	touch $@
 
-docs-tools: check-node docs/node_modules/.package-lock.json
+docs-tools: check-bun docs/node_modules/.docs-installed
 
 docs-helium: docs-tools check-swag
 	$(MAKE) -C helium docs
@@ -51,9 +52,10 @@ docs-generate: docs-helium docs-gold docs-carbon docs-oxygen
 
 # --- OpenAPI merge related ---
 openapi: docs-tools docs-generate
-	node docs/generate.mjs merge docs/openapi-merge.json
+	bun docs/generate.ts merge docs/openapi-merge.json
 	@echo "✓ OpenAPI documentation merged at docs/openapi.json"
 
 docs-check: docs-tools
-	npm --prefix docs test
-	npm --prefix docs run lint
+	cd docs && bun run typecheck
+	cd docs && bun test
+	cd docs && bun run lint
