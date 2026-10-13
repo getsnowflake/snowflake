@@ -8,6 +8,7 @@ import com.snowflake.carbon.model.response.ErrorResponse;
 import com.snowflake.carbon.model.response.ScoreResponse;
 import com.snowflake.carbon.services.ScoreService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+@SecurityRequirement(name = "Bearer")
 @Tag(name = "Scorer", description = "Operations related to credit score")
 @RestController
 public class ScoreController {
@@ -30,7 +32,7 @@ public class ScoreController {
     @Autowired
     private ScoreService scoreService;
 
-    @Operation(description = "Get credit score")
+    @Operation(operationId = "getScore", summary = "Get credit score", description = "Read the authenticated user’s latest credit score.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -78,7 +80,7 @@ public class ScoreController {
         );
     }
 
-    @Operation(description = "Calculate credit score")
+    @Operation(operationId = "calculateScore", summary = "Calculate credit score", description = "Recalculate the authenticated user’s credit score from their financial profile.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -114,7 +116,7 @@ public class ScoreController {
             )
     })
     @PostMapping("/score")
-    public ResponseEntity<ScoreResponse> calculateScore(HttpServletRequest request, @Valid @RequestBody CalculateScoreRequest dto) {
+    public ResponseEntity<ScoreResponse> calculateScore(HttpServletRequest request, @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Annual income, debt and assets value in USD used to calculate the credit score.") @Valid @RequestBody CalculateScoreRequest dto) {
 
         String userId = request.getAttribute("userId").toString();
 

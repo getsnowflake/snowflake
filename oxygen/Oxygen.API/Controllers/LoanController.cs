@@ -13,7 +13,9 @@ namespace Oxygen.API.Controllers;
 [ServiceFilter(typeof(RateLimitFilter))]
 public class LoanController(ILoanService loanService) : ControllerBase
 {
+    /// <param name="request">Requested loan amount in USD and repayment term in months.</param>
     [SwaggerOperation(
+        OperationId = "applyForLoan",
         Summary    = "Apply for a loan",
         Description = "Apply for a loan with the desired amount and term"
     )]

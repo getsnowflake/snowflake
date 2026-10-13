@@ -43,7 +43,7 @@ func NewTransactionsController(db *gorm.DB, jwt *jwt.JWT, svc service.Transactio
 
 // GetTransactions godoc
 //
-//	@Summary		/account/transactions
+//	@Summary		List account transactions
 //	@Description	Get user account transactions with optional filters and pagination
 //	@Tags			Transactions
 //	@Accept			json
@@ -59,7 +59,7 @@ func NewTransactionsController(db *gorm.DB, jwt *jwt.JWT, svc service.Transactio
 //	@Failure		500			{object}	exceptions.InternalServerError		"Failed to fetch transactions"
 //	@Security		Bearer
 //	@Router			/account/transactions [get]
-//	@OperationId	getTransactions
+//	@ID				getTransactions
 func (s *transactionsController) GetTransactions(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 
@@ -126,7 +126,7 @@ func (s *transactionsController) GetTransactions(ctx *fiber.Ctx) error {
 
 // GetTransactionByID godoc
 //
-//	@Summary		/account/transactions/{id}
+//	@Summary		Get a transaction
 //	@Description	Get a specific transaction by ID (user must be sender or receiver)
 //	@Tags			Transactions
 //	@Accept			json
@@ -137,7 +137,7 @@ func (s *transactionsController) GetTransactions(ctx *fiber.Ctx) error {
 //	@Failure		500	{object}	exceptions.InternalServerError	"Failed to fetch transaction"
 //	@Security		Bearer
 //	@Router			/account/transactions/{id} [get]
-//	@OperationId	getTransactionByID
+//	@ID				getTransactionByID
 func (s *transactionsController) GetTransactionByID(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 	id, err := uuid.Parse(ctx.Params("id"))
@@ -162,20 +162,21 @@ func (s *transactionsController) GetTransactionByID(ctx *fiber.Ctx) error {
 
 // CreateTransaction godoc
 //
-//	@Summary		/account/transactions
+//	@Summary		Transfer funds
 //	@Description	Create a new transaction/transfer between accounts
 //	@Description	Emits: `transaction.received` event (outbox pattern, at-least-once) upon successful transfer completion.
 //	@Tags			Transactions
 //	@Accept			json
 //	@Produce		json
 //	@Param			body	body		dto.CreateTransferRequest		true	"Create Transfer Request"
+//	@Success		200		{object}	dto.TransactionResponse			"Previously completed transaction returned for an idempotent retry"
 //	@Success		201		{object}	dto.TransactionResponse			"TransactionResponse"
 //	@Failure		400		{object}	exceptions.BadRequestError		"Invalid amount, account status, or limits exceeded"
 //	@Failure		404		{object}	exceptions.NotFoundError		"Account or receiver flake key not found"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Transfer failed"
 //	@Security		Bearer
-//	@Router			/account/transactions [post]
-//	@OperationId	createTransaction
+//	@Router			/account/transactions/transfer [post]
+//	@ID				createTransaction
 func (s *transactionsController) CreateTransaction(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 
@@ -213,20 +214,22 @@ func (s *transactionsController) CreateTransaction(ctx *fiber.Ctx) error {
 
 // Deposit godoc
 //
-//	@Summary		/account/transactions/deposit
+//	@Summary		Deposit funds
 //	@Description	Deposit funds into an account
 //	@Description	Emits: `transaction.received` event (outbox pattern, at-least-once) upon successful deposit completion.
 //	@Tags			Transactions
 //	@Accept			json
 //	@Produce		json
 //	@Param			body	body		dto.DepositRequest				true	"Deposit Request"
+//	@Success		200		{object}	dto.TransactionResponse			"Previously completed transaction returned for an idempotent retry"
 //	@Success		201		{object}	dto.TransactionResponse			"TransactionResponse"
 //	@Failure		400		{object}	exceptions.BadRequestError		"Invalid amount or account status"
 //	@Failure		403		{object}	exceptions.ForbiddenError		"Account does not belong to authenticated user"
 //	@Failure		404		{object}	exceptions.NotFoundError		"Account not found"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Deposit failed"
+//	@Security		Bearer
 //	@Router			/account/transactions/deposit [post]
-//	@OperationId	deposit
+//	@ID				deposit
 func (s *transactionsController) Deposit(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 

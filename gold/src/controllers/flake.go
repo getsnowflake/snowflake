@@ -33,7 +33,7 @@ func NewFlakeController(db *gorm.DB, jwt *jwt.JWT, svc service.FlakeService) Fla
 
 // CreateFlake godoc
 //
-//	@Summary		/account/flakes
+//	@Summary		Create a FLAKE key
 //	@Description	Create a new flake key for the user account
 //	@Tags			Flakes
 //	@Accept			json
@@ -44,8 +44,8 @@ func NewFlakeController(db *gorm.DB, jwt *jwt.JWT, svc service.FlakeService) Fla
 //	@Failure		404		{object}	exceptions.NotFoundError		"Account not found"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Failed to create flake key"
 //	@Security		Bearer
-//	@Router			/account/flakes [post]
-//	@OperationId	createFlake
+//	@Router			/account/flake [post]
+//	@ID				createFlake
 func (s *flakeController) CreateFlake(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 
@@ -78,7 +78,7 @@ func (s *flakeController) CreateFlake(ctx *fiber.Ctx) error {
 
 // GetFlakes godoc
 //
-//	@Summary		/account/flakes
+//	@Summary		List account FLAKE keys
 //	@Description	Get all flake keys for the user account
 //	@Tags			Flakes
 //	@Accept			json
@@ -87,8 +87,8 @@ func (s *flakeController) CreateFlake(ctx *fiber.Ctx) error {
 //	@Failure		404	{object}	exceptions.NotFoundError		"Account not found"
 //	@Failure		500	{object}	exceptions.InternalServerError	"Failed to fetch flake keys"
 //	@Security		Bearer
-//	@Router			/account/flakes [get]
-//	@OperationId	getFlakes
+//	@Router			/account/flake [get]
+//	@ID				getFlakes
 func (s *flakeController) GetFlakes(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 
@@ -105,7 +105,7 @@ func (s *flakeController) GetFlakes(ctx *fiber.Ctx) error {
 
 // DeleteFlake godoc
 //
-//	@Summary		/account/flakes/{id}
+//	@Summary		Deactivate a FLAKE key
 //	@Description	Deactivate a flake key
 //	@Tags			Flakes
 //	@Accept			json
@@ -116,8 +116,8 @@ func (s *flakeController) GetFlakes(ctx *fiber.Ctx) error {
 //	@Failure		404	{object}	exceptions.NotFoundError		"Account or flake key not found"
 //	@Failure		500	{object}	exceptions.InternalServerError	"Failed to deactivate flake key"
 //	@Security		Bearer
-//	@Router			/account/flakes/{id} [delete]
-//	@OperationId	deleteFlake
+//	@Router			/account/flake/{id} [delete]
+//	@ID				deleteFlake
 func (s *flakeController) DeleteFlake(ctx *fiber.Ctx) error {
 	claims := ctx.Locals("claims").(*jwt.Claims)
 	id, err := uuid.Parse(ctx.Params("id"))
@@ -144,7 +144,7 @@ func (s *flakeController) DeleteFlake(ctx *fiber.Ctx) error {
 
 // PublicLookupFlake godoc
 //
-//	@Summary		/account/flakes/lookup
+//	@Summary		Look up a FLAKE key
 //	@Description	Publicly lookup account info by flake key (no authentication required)
 //	@Tags			Flakes
 //	@Accept			json
@@ -153,8 +153,8 @@ func (s *flakeController) DeleteFlake(ctx *fiber.Ctx) error {
 //	@Success		200			{object}	dto.LookupFlakeResponse		"LookupFlakeResponse"
 //	@Failure		400			{object}	exceptions.BadRequestError	"Missing key_value parameter"
 //	@Failure		404			{object}	exceptions.NotFoundError	"Flake key or account not found"
-//	@Router			/account/flakes/lookup [get]
-//	@OperationId	publicLookupFlake
+//	@Router			/account/flake/lookup [get]
+//	@ID				publicLookupFlake
 func (s *flakeController) PublicLookupFlake(ctx *fiber.Ctx) error {
 	keyValue := ctx.Query("key_value")
 	if keyValue == "" {

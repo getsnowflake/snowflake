@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using Oxygen.API.Extensions;
@@ -26,6 +25,8 @@ builder.Host.UseSerilog((ctx, lc) =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.EnableAnnotations();
+    options.OperationFilter<AnonymousOperationFilter>();
         
     options.SwaggerDoc("v1", new OpenApiInfo
     {
@@ -50,7 +51,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
+        Scheme = "bearer",
         BearerFormat = "JWT",
         Description =
             "Enter 'Bearer' [space] and your token in the text input below.\n\nExample: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
@@ -71,8 +72,8 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
     
-    options.IncludeXmlComments(Assembly.GetExecutingAssembly());
-    options.IncludeXmlComments(typeof(Oxygen.DTO.Response.HealthResponse).Assembly);
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Oxygen.API.xml"));
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Oxygen.DTO.xml"));
 });
 builder.Services.AddSingleton<RateLimitFilter>();
 builder.Services.AddControllers(options =>
@@ -132,6 +133,13 @@ app.UseHttpMetrics();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
+if (args.Contains("--export-openapi"))
+{
+    var output = args[Array.IndexOf(args, "--export-openapi") + 1];
+    app.Services.SaveSwaggerJson(output);
+    return;
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

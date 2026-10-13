@@ -1,3 +1,7 @@
+MVN ?= mvn
+
+.PHONY: docs-tools docs-helium docs-gold docs-carbon docs-oxygen docs-generate openapi docs-check
+
 # --- Checks for required tools ---
 check-docker:
 	@command -v docker > /dev/null 2>&1 || { echo "Docker is not installed. Please install Docker."; exit 1; }
@@ -5,8 +9,8 @@ check-docker:
 check-dotnet:
 	@command -v dotnet > /dev/null 2>&1 || { echo ".NET is not installed. Please install .NET."; exit 1; }
 
-check-node:
-	@command -v node > /dev/null 2>&1 || { echo "Node is not installed. Please install Node."; exit 1; }
+check-bun:
+	@command -v bun > /dev/null 2>&1 || { echo "Bun is not installed. Please install Bun."; exit 1; }
 
 check-go:
 	@command -v go > /dev/null 2>&1 || { echo "Go is not installed. Please install Go."; exit 1; }
@@ -24,17 +28,34 @@ start: check-docker check-dotnet
 	make migrate-oxygen
 
 # --- OpenAPI generation targets (individual services) ---
-docs-helium: check-swag
+docs/node_modules/.docs-installed: docs/package.json docs/bun.lock
+	cd docs && bun install --frozen-lockfile
+	touch $@
+
+docs-tools: check-bun docs/node_modules/.docs-installed
+
+docs-helium: docs-tools check-swag
 	$(MAKE) -C helium docs
 
-docs-gold: check-swag
+docs-gold: docs-tools check-swag
 	$(MAKE) -C gold docs
 
+docs-carbon:
+	cd carbon && $(MVN) --batch-mode --no-transfer-progress test -Dtest=OpenApiExportTest -Dopenapi.output.path=$(CURDIR)/carbon/openapi.json
+
+docs-oxygen: check-dotnet
+	cd oxygen/Oxygen.API && dotnet run --no-launch-profile -- --export-openapi $(CURDIR)/oxygen/openapi.json
+
 # --- OpenAPI generation (all services) ---
-docs-generate: docs-helium docs-gold
+docs-generate: docs-helium docs-gold docs-carbon docs-oxygen
 	@echo "✓ All service OpenAPI specs generated"
 
 # --- OpenAPI merge related ---
-openapi: docs-generate check-node
-	npx openapi-merge-cli --config docs/openapi-merge.json
+openapi: docs-tools docs-generate
+	bun docs/generate.ts merge docs/openapi-merge.json
 	@echo "✓ OpenAPI documentation merged at docs/openapi.json"
+
+docs-check: docs-tools
+	cd docs && bun run typecheck
+	cd docs && bun test
+	cd docs && bun run lint

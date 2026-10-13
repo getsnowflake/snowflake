@@ -13,14 +13,9 @@ generate: $(PROTO_FILES)
 # -- OpenAPI Gen --
 INPUT_FILE = ./swagger.json
 OUTPUT_FILE = ./openapi.json
-URL = https://converter.swagger.io/api/convert
 openapi-gen:
-	@echo "Sending request to $(URL) with $(INPUT_FILE)..."
-	@curl -s -X POST $(URL) \
-		-H "Content-Type: application/json" \
-		-d @$(INPUT_FILE) \
-		-o $(OUTPUT_FILE)
-	@echo "Response has been written to $(OUTPUT_FILE)"
+	$(MAKE) -C .. docs-tools
+	bun ../docs/generate.ts convert $(INPUT_FILE) $(OUTPUT_FILE)
 
 docs-fmt:
 	swag fmt -g src/cmd/server/main.go -d ./src

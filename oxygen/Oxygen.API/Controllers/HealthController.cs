@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Oxygen.DTO.Response;
 using Oxygen.Infrastructure;
@@ -7,11 +8,13 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Oxygen.API.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("loan")]
 [Tags("Health")]
 public class HealthController(ApplicationDbContext dbContext) : ControllerBase
 {
     [SwaggerOperation(
+        OperationId = "oxygenHealth",
         Summary    = "Health check",
         Description = "Liveness/readiness check (database)"
     )]

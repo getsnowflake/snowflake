@@ -32,7 +32,7 @@ public class HealthController {
     @Autowired
     private ConnectionFactory rabbitConnectionFactory;
 
-    @Operation(description = "Liveness/readiness check (database + RabbitMQ)")
+    @Operation(operationId = "carbonHealth", summary = "Check scoring service health", description = "Check the scoring service database and RabbitMQ connections.")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",

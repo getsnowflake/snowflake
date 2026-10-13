@@ -23,14 +23,14 @@ func BindHealthRoutes(app *fiber.App, db *gorm.DB, rmq *messaging.MessagingServi
 
 // healthHandler godoc
 //
-//	@Summary		/account/health
+//	@Summary		Check payments service health
 //	@Description	Service health check (database + RabbitMQ)
 //	@Tags			Health
 //	@Produce		json
 //	@Success		200	{object}	health.HealthResponse	"Service healthy"
 //	@Failure		503	{object}	health.HealthResponse	"Service unhealthy"
 //	@Router			/account/health [get]
-//	@OperationId	health
+//	@ID				goldHealth
 func healthHandler(hs *health.Service) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		status, components := hs.Check(context.Background())
