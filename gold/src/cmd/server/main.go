@@ -45,10 +45,15 @@ import (
 //	@license.name	GNU General Public License v3.0
 //	@license.url	https://www.gnu.org/licenses/gpl-3.0
 
-// @host		snowflake.snowye.dev
-// @BasePath	/
+//	@host		snowflake.snowye.dev
+//	@BasePath	/
 
-// @Schemes	https
+//	@securityDefinitions.apikey	Bearer
+//	@in							header
+//	@name						Authorization
+//	@description				JWT access token, prefixed with Bearer.
+
+//	@Schemes	https
 func main() {
 	conf := config.GetConfig()
 	logger := logpkg.NewLog(conf)

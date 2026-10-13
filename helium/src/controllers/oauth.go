@@ -51,14 +51,14 @@ func NewOAuthController(db *gorm.DB, j *jwt.JWT, conf *viper.Viper, svc service.
 
 // Redirect godoc
 //
-//	@Summary		/auth/oauth
+//	@Summary		Start Google sign-in
 //	@Description	Initiate Google OAuth login
 //	@Tags			Auth
 //	@Produce		json
 //	@Success		307	"Redirects to Google OAuth consent screen"
 //	@Failure		500	{object}	exceptions.InternalServerError	"Failed to generate state"
 //	@Router			/auth/oauth [get]
-//	@OperationId	oauthRedirect
+//	@ID				oauthRedirect
 func (s *oauthController) Redirect(c *fiber.Ctx) error {
 	state, err := generateState()
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *oauthController) Redirect(c *fiber.Ctx) error {
 
 // Callback godoc
 //
-//	@Summary		/auth/oauth/callback
+//	@Summary		Complete Google sign-in
 //	@Description	Google OAuth callback — exchanges code for token, creates/links account, returns access and refresh tokens
 //	@Description	Emits: `user.created` event upon new user registration.
 //	@Tags			Auth
@@ -93,7 +93,7 @@ func (s *oauthController) Redirect(c *fiber.Ctx) error {
 //	@Failure		401		{object}	exceptions.UnauthorizedError	"Invalid state"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Failed to exchange code OR fetch user info OR generate token"
 //	@Router			/auth/oauth/callback [get]
-//	@OperationId	oauthCallback
+//	@ID				oauthCallback
 func (s *oauthController) Callback(c *fiber.Ctx) error {
 	state := c.Query("state")
 	code := c.Query("code")

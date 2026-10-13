@@ -35,8 +35,8 @@ func NewAuthController(db *gorm.DB, j *jwt.JWT, svc service.AuthService, log *lo
 
 // Profile godoc
 //
-//	@Summary		/auth/profile
-//	@Description	Get user profile
+//	@Summary		Get user profile
+//	@Description	Return the authenticated user's identity and financial profile.
 //	@Tags			Auth
 //	@Accept			json
 //	@Produce		json
@@ -45,7 +45,7 @@ func NewAuthController(db *gorm.DB, j *jwt.JWT, svc service.AuthService, log *lo
 //	@Failure		500	{object}	exceptions.InternalServerError	"Failed to fetch user"
 //	@Security		Bearer
 //	@Router			/auth/profile [get]
-//	@OperationId	profile
+//	@ID				profile
 func (s *authController) Profile(c *fiber.Ctx) error {
 	claims := c.Locals("claims").(*jwt.Claims)
 
@@ -62,7 +62,7 @@ func (s *authController) Profile(c *fiber.Ctx) error {
 
 // Register godoc
 //
-//	@Summary		/auth/register
+//	@Summary		Register a user
 //	@Description	Register a new user.
 //	@Description	Emits: `user.created` event upon successful registration.
 //	@Tags			Auth
@@ -74,7 +74,7 @@ func (s *authController) Profile(c *fiber.Ctx) error {
 //	@Failure		409		{object}	exceptions.ConflictError		"Email already taken"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Failed to hash password or generate token"
 //	@Router			/auth/register [post]
-//	@OperationId	register
+//	@ID				register
 func (s *authController) Register(c *fiber.Ctx) error {
 	body := new(dto.RegisterRequest)
 	if err := utils.ParseRequest(c, body); err != nil {
@@ -94,7 +94,7 @@ func (s *authController) Register(c *fiber.Ctx) error {
 
 // Login godoc
 //
-//	@Summary		/auth/login
+//	@Summary		Log in
 //	@Description	Login
 //	@Tags			Auth
 //	@Accept			json
@@ -105,7 +105,7 @@ func (s *authController) Register(c *fiber.Ctx) error {
 //	@Failure		401		{object}	exceptions.UnauthorizedError	"Wrong email or password"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Failed to sign in"
 //	@Router			/auth/login [post]
-//	@OperationId	login
+//	@ID				login
 func (s *authController) Login(c *fiber.Ctx) error {
 	body := new(dto.LoginRequest)
 	if err := utils.ParseRequest(c, body); err != nil {
@@ -125,7 +125,7 @@ func (s *authController) Login(c *fiber.Ctx) error {
 
 // Refresh godoc
 //
-//	@Summary		/auth/refresh
+//	@Summary		Refresh access tokens
 //	@Description	Exchange a refresh token for a new access token and refresh token (token rotation).
 //	@Description	The provided refresh token is revoked and a new pair is issued.
 //	@Tags			Auth
@@ -137,7 +137,7 @@ func (s *authController) Login(c *fiber.Ctx) error {
 //	@Failure		401		{object}	exceptions.UnauthorizedError	"Invalid, revoked, or expired refresh token"
 //	@Failure		500		{object}	exceptions.InternalServerError	"Failed to refresh tokens"
 //	@Router			/auth/refresh [post]
-//	@OperationId	refresh
+//	@ID				refresh
 func (s *authController) Refresh(c *fiber.Ctx) error {
 	body := new(dto.RefreshRequest)
 	if err := utils.ParseRequest(c, body); err != nil {
@@ -157,7 +157,7 @@ func (s *authController) Refresh(c *fiber.Ctx) error {
 
 // Logout godoc
 //
-//	@Summary		/auth/logout
+//	@Summary		Log out
 //	@Description	Revoke a refresh token, invalidating the session.
 //	@Tags			Auth
 //	@Accept			json
@@ -167,7 +167,7 @@ func (s *authController) Refresh(c *fiber.Ctx) error {
 //	@Failure		400		{object}	exceptions.BadRequestError		"Invalid request body"
 //	@Failure		401		{object}	exceptions.UnauthorizedError	"Invalid or already revoked refresh token"
 //	@Router			/auth/logout [post]
-//	@OperationId	logout
+//	@ID				logout
 func (s *authController) Logout(c *fiber.Ctx) error {
 	body := new(dto.LogoutRequest)
 	if err := utils.ParseRequest(c, body); err != nil {

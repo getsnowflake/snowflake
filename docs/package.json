@@ -1,0 +1,17 @@
+{
+  "name": "snowflake-api-docs",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node --test *.test.mjs",
+    "generate": "node generate.mjs merge openapi-merge.json",
+    "lint": "node lint.mjs openapi.json"
+  },
+  "devDependencies": {
+    "@scalar/cli": "2.10.0",
+    "openapi-merge": "2.0.2",
+    "openapi-sampler": "1.7.6",
+    "swagger2openapi": "7.0.8"
+  }
+}
