@@ -17,7 +17,8 @@ concurrency:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    # Image targets linux/arm64, so build natively instead of under QEMU.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     permissions:
       contents: read
@@ -35,7 +36,7 @@ jobs:
           cache-dependency-path: ./gold/go.sum
 
       # One invocation builds both commands in parallel with a shared cache.
-      - name: Cross-compile binaries
+      - name: Build binaries
         working-directory: ./gold
         env:
           GOOS: linux
@@ -63,6 +64,8 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: ghcr.io/${{ github.repository }}/gold:prod
+          cache-from: type=gha,scope=gold
+          cache-to: type=gha,mode=max,scope=gold
 
       - name: Deploy to Coolify
         env:

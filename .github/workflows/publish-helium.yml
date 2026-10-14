@@ -17,7 +17,8 @@ concurrency:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    # Image targets linux/arm64, so build natively instead of under QEMU.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     permissions:
       contents: read
@@ -38,6 +39,8 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           version: "27.1"
+          # Authenticated release lookup avoids API rate-limit flakes.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install protoc plugins
         working-directory: ./helium
@@ -50,7 +53,7 @@ jobs:
         run: make generate
 
       # One invocation builds both commands in parallel with a shared cache.
-      - name: Cross-compile binaries
+      - name: Build binaries
         working-directory: ./helium
         env:
           GOOS: linux
@@ -78,6 +81,8 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: ghcr.io/${{ github.repository }}/helium:prod
+          cache-from: type=gha,scope=helium
+          cache-to: type=gha,mode=max,scope=helium
 
       - name: Deploy to Coolify
         env:
