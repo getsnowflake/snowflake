@@ -1,12 +1,12 @@
-FROM alpine:latest
-RUN apk add --no-cache curl
+# No RUN steps: image is assembled from prebuilt arm64 binaries, so the
+# x64 runner never emulates arm64 and no layer cache is needed.
+FROM alpine:3.22
 WORKDIR /app
-COPY main .
-COPY migrate .
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+COPY main migrate ./
+COPY --chmod=755 entrypoint.sh .
 COPY config ./config
 EXPOSE 8083
+# busybox wget instead of installing curl
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8083/account/health || exit 1
+    CMD wget -qO /dev/null http://localhost:8083/account/health || exit 1
 CMD ["./entrypoint.sh"]
