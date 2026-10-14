@@ -52,8 +52,8 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: ghcr.io/${{ github.repository }}/gold:prod
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=gold
+          cache-to: type=gha,mode=max,scope=gold
 
       - name: Deploy to Coolify
         run: |

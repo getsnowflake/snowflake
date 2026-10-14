@@ -67,8 +67,8 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: ghcr.io/${{ github.repository }}/helium:prod
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=helium
+          cache-to: type=gha,mode=max,scope=helium
 
       - name: Deploy to Coolify
         run: |
