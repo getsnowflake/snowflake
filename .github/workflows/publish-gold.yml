@@ -6,11 +6,20 @@ on:
       - main
     paths:
       - 'gold/**'
+      - '.github/workflows/publish-gold.yml'
+      - '!**/*.md'
   workflow_dispatch:
+
+# Never run two deploys at once; a newer push waits for the current one.
+concurrency:
+  group: publish-gold
+  cancel-in-progress: false
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    # Image targets linux/arm64, so build natively instead of under QEMU.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
@@ -26,13 +35,16 @@ jobs:
           cache: true
           cache-dependency-path: ./gold/go.sum
 
-      - name: Cross-compile server binary
+      # One invocation builds both commands in parallel with a shared cache.
+      - name: Build binaries
         working-directory: ./gold
-        run: GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o main src/cmd/server/main.go
-
-      - name: Cross-compile migrate binary
-        working-directory: ./gold
-        run: GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o migrate src/cmd/migrate/main.go
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CGO_ENABLED: 0
+        run: |
+          go build -trimpath -ldflags="-s -w" -o bin/ ./src/cmd/server ./src/cmd/migrate
+          mv bin/server main && mv bin/migrate migrate
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -42,7 +54,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -52,9 +64,13 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: ghcr.io/${{ github.repository }}/gold:prod
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=gold
+          cache-to: type=gha,mode=max,scope=gold
 
       - name: Deploy to Coolify
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_GOLD_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
         run: |
-          curl --request GET '${{ secrets.COOLIFY_GOLD_WEBHOOK }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+          curl --fail-with-body --request GET "$COOLIFY_WEBHOOK" \
+            --header "Authorization: Bearer $COOLIFY_TOKEN"

@@ -4,22 +4,15 @@ FROM maven:3.9.8-eclipse-temurin-22 AS build
 # Set the working directory in the container
 WORKDIR /app
 
-# Install the protobuf compiler in a single RUN command
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --assume-yes \
-      protobuf-compiler && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Copy the pom.xml file and download dependencies
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN mvn -B dependency:go-offline
 
 # Copy the rest of your application
 COPY src ./src
 
-# Build the application with verbose logging
-RUN mvn -X package -DskipTests
+# protoc comes from protobuf-maven-plugin, no apt package needed
+RUN mvn -B package -DskipTests
 
 # Stage 2: Use a smaller image for the final stage
 FROM eclipse-temurin:22-jre-alpine
